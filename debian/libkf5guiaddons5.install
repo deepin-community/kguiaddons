@@ -1,0 +1,4 @@
+usr/lib/*/libKF5GuiAddons.so.5
+usr/lib/*/libKF5GuiAddons.so.5.*
+usr/lib/*/qt5/plugins/kf5/kguiaddons/kmodifierkey/kmodifierkey_xcb.so
+usr/share/qlogging-categories5/kguiaddons.categories

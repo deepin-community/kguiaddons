@@ -1,0 +1,63 @@
+Source: kguiaddons
+Section: libs
+Priority: optional
+Maintainer: Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>
+Uploaders: Aurélien COUDERC <coucouf@debian.org>,
+           Norbert Preining <norbert@preining.info>,
+Build-Depends: cmake (>= 3.16~),
+               debhelper-compat (= 13),
+               doxygen,
+               extra-cmake-modules (>= 5.90.0~),
+               libqt5sql5-sqlite:native,
+               libqt5waylandclient5-dev (>= 5.15.2~) [linux-any],
+               libqt5x11extras5-dev (>= 5.15.2~),
+               libwayland-dev (>= 1.9~) [linux-any],
+               libx11-dev,
+               libxcb1-dev,
+               pkg-config,
+               pkg-kde-tools (>= 0.15.15ubuntu1~),
+               qtbase5-dev (>= 5.15.2~),
+               qtbase5-private-dev,
+               qttools5-dev,
+               qttools5-dev-tools (>= 5.4),
+               qtwayland5-dev-tools (>= 5.15.0~) [linux-any],
+Standards-Version: 4.6.0
+Homepage: https://invent.kde.org/frameworks/kguiaddons
+Vcs-Browser: https://salsa.debian.org/qt-kde-team/kde/kguiaddons
+Vcs-Git: https://salsa.debian.org/qt-kde-team/kde/kguiaddons.git
+Rules-Requires-Root: no
+
+Package: libkf5guiaddons-dev
+Section: libdevel
+Architecture: any
+Depends: libkf5coreaddons-dev (>= 5.84.0~),
+         libkf5guiaddons5 (= ${binary:Version}),
+         qtbase5-dev (>= 5.15.2~),
+         ${misc:Depends},
+Recommends: libkf5guiaddons-doc (= ${source:Version})
+Description: development headers for the kguiaddons framework
+ This package contains development files for building software that uses
+ libraries from the kguiaddon framework
+Breaks: libkf5configwidgets-dev (<< 5.54), libkf5kdelibs4support-dev (<< 5.54)
+
+Package: libkf5guiaddons-doc
+Section: doc
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: additional addons for QtGui (documentation)
+ Qt widgets for colours, fonts and text
+ .
+ This package contains the qch documentation files.
+
+Package: libkf5guiaddons5
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: additional addons for QtGui
+ Qt widgets for colours, fonts and text
+Breaks: libkf5configwidgets5 (<< 5.54),
+        libkf5kdelibs4support5 (<< 5.54),
+        libkf5kdelibs4support5-bin (<< 5.42),
+        libkf5plasma5 (<< 5.54),
+        libkf5texteditor5 (<< 5.54),
