@@ -3,11 +3,12 @@ Section: libs
 Priority: optional
 Maintainer: Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>
 Uploaders: Aurélien COUDERC <coucouf@debian.org>,
-           Norbert Preining <norbert@preining.info>,
 Build-Depends: cmake (>= 3.16~),
                debhelper-compat (= 13),
+               dh-sequence-kf5,
+               dh-sequence-pkgkde-symbolshelper,
                doxygen,
-               extra-cmake-modules (>= 5.90.0~),
+               extra-cmake-modules (>= 5.103.0~),
                libqt5sql5-sqlite:native,
                libqt5waylandclient5-dev (>= 5.15.2~) [linux-any],
                libqt5x11extras5-dev (>= 5.15.2~),
@@ -15,17 +16,38 @@ Build-Depends: cmake (>= 3.16~),
                libx11-dev,
                libxcb1-dev,
                pkg-config,
-               pkg-kde-tools (>= 0.15.15ubuntu1~),
+               plasma-wayland-protocols (>= 1.7.0~),
                qtbase5-dev (>= 5.15.2~),
-               qtbase5-private-dev,
+               qtbase5-private-dev (>= 5.15.2~),
                qttools5-dev,
                qttools5-dev-tools (>= 5.4),
                qtwayland5-dev-tools (>= 5.15.0~) [linux-any],
-Standards-Version: 4.6.0
+Standards-Version: 4.6.2
 Homepage: https://invent.kde.org/frameworks/kguiaddons
 Vcs-Browser: https://salsa.debian.org/qt-kde-team/kde/kguiaddons
 Vcs-Git: https://salsa.debian.org/qt-kde-team/kde/kguiaddons.git
 Rules-Requires-Root: no
+
+Package: libkf5guiaddons-bin
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends},
+Breaks: libkf5guiaddons-data (<< 5.96.0-1),
+Replaces: libkf5guiaddons-data (<< 5.96.0-1),
+Description: additional addons for QtGui
+ Qt widgets for colours, fonts and text
+ .
+ This package contains kde-geo-uri-handler.
+
+Package: libkf5guiaddons-data
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends},
+Breaks: libkf5guiaddons5 (<< 5.92.0-1),
+Replaces: libkf5guiaddons5 (<< 5.92.0-1),
+Description: additional addons for QtGui
+ Qt widgets for colours, fonts and text
+ .
+ This package contains shared data files.
 
 Package: libkf5guiaddons-dev
 Section: libdevel
@@ -34,17 +56,16 @@ Depends: libkf5coreaddons-dev (>= 5.84.0~),
          libkf5guiaddons5 (= ${binary:Version}),
          qtbase5-dev (>= 5.15.2~),
          ${misc:Depends},
-Recommends: libkf5guiaddons-doc (= ${source:Version})
+Recommends: libkf5guiaddons-doc (= ${source:Version}),
 Description: development headers for the kguiaddons framework
  This package contains development files for building software that uses
  libraries from the kguiaddon framework
-Breaks: libkf5configwidgets-dev (<< 5.54), libkf5kdelibs4support-dev (<< 5.54)
 
 Package: libkf5guiaddons-doc
 Section: doc
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}
+Depends: ${misc:Depends},
 Description: additional addons for QtGui (documentation)
  Qt widgets for colours, fonts and text
  .
@@ -53,11 +74,9 @@ Description: additional addons for QtGui (documentation)
 Package: libkf5guiaddons5
 Architecture: any
 Multi-Arch: same
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: libkf5guiaddons-data (= ${source:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Recommends: libkf5guiaddons-bin (= ${binary:Version}),
 Description: additional addons for QtGui
  Qt widgets for colours, fonts and text
-Breaks: libkf5configwidgets5 (<< 5.54),
-        libkf5kdelibs4support5 (<< 5.54),
-        libkf5kdelibs4support5-bin (<< 5.42),
-        libkf5plasma5 (<< 5.54),
-        libkf5texteditor5 (<< 5.54),

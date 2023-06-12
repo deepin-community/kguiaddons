@@ -22,6 +22,51 @@
 
 #include <array>
 
+/// Singleton whose only purpose is to tell us about other sequence recorders getting started
+class KeySequenceRecorderGlobal : public QObject
+{
+    Q_OBJECT
+public:
+    static KeySequenceRecorderGlobal *self()
+    {
+        static KeySequenceRecorderGlobal s_self;
+        return &s_self;
+    }
+
+Q_SIGNALS:
+    void sequenceRecordingStarted();
+};
+
+class KeySequenceRecorderPrivate : public QObject
+{
+    Q_OBJECT
+public:
+    // Copy of QKeySequencePrivate::MaxKeyCount from private header
+    enum { MaxKeyCount = 4 };
+
+    KeySequenceRecorderPrivate(KeySequenceRecorder *qq);
+
+    void controlModifierlessTimeout();
+    bool eventFilter(QObject *watched, QEvent *event) override;
+    void handleKeyPress(QKeyEvent *event);
+    void handleKeyRelease(QKeyEvent *event);
+    void finishRecording();
+    void receivedRecording();
+
+    KeySequenceRecorder *q;
+    QKeySequence m_currentKeySequence;
+    QKeySequence m_previousKeySequence;
+    QPointer<QWindow> m_window;
+    bool m_isRecording;
+    bool m_multiKeyShortcutsAllowed;
+    bool m_modifierlessAllowed;
+    bool m_modifierOnlyAllowed = false;
+
+    Qt::KeyboardModifiers m_currentModifiers;
+    QTimer m_modifierlessTimer;
+    std::unique_ptr<ShortcutInhibition> m_inhibition;
+};
+
 constexpr Qt::KeyboardModifiers modifierMask = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::KeypadModifier;
 
 // Copied here from KKeyServer
@@ -233,39 +278,15 @@ static bool isOkWhenModifierless(int key)
 
 static QKeySequence appendToSequence(const QKeySequence &sequence, int key)
 {
-    if (sequence.count() >= 4) {
-        qCWarning(KGUIADDONS_LOG) << "Invalid sequence size: " << sequence.count();
+    if (sequence.count() >= KeySequenceRecorderPrivate::MaxKeyCount) {
+        qCWarning(KGUIADDONS_LOG) << "Cannot append to a key to a sequence which is already of length" << sequence.count();
         return sequence;
     }
 
-    std::array<int, 4> keys{sequence[0], sequence[1], sequence[2], sequence[3]};
+    std::array<int, KeySequenceRecorderPrivate::MaxKeyCount> keys{sequence[0], sequence[1], sequence[2], sequence[3]};
     keys[sequence.count()] = key;
     return QKeySequence(keys[0], keys[1], keys[2], keys[3]);
 }
-
-class KeySequenceRecorderPrivate : public QObject
-{
-    Q_OBJECT
-public:
-    KeySequenceRecorderPrivate(KeySequenceRecorder *qq);
-
-    void controlModifierlessTimeout();
-    bool eventFilter(QObject *watched, QEvent *event) override;
-    void handleKeyPress(QKeyEvent *event);
-    void handleKeyRelease(QKeyEvent *event);
-    void finishRecording();
-
-    KeySequenceRecorder *q;
-    QKeySequence m_currentKeySequence;
-    QPointer<QWindow> m_window;
-    bool m_isRecording;
-    bool m_multiKeyShortcutsAllowed;
-    bool m_modifierlessAllowed;
-
-    Qt::KeyboardModifiers m_currentModifiers;
-    QTimer m_modifierlessTimer;
-    std::unique_ptr<ShortcutInhibition> m_inhibition;
-};
 
 KeySequenceRecorderPrivate::KeySequenceRecorderPrivate(KeySequenceRecorder *qq)
     : QObject(qq)
@@ -351,8 +372,11 @@ void KeySequenceRecorderPrivate::handleKeyPress(QKeyEvent *event)
 
         m_currentKeySequence = appendToSequence(m_currentKeySequence, key);
         Q_EMIT q->currentKeySequenceChanged();
-
-        if ((!m_multiKeyShortcutsAllowed) || (m_currentKeySequence.count() == 4)) {
+        // Now we are in a critical region (race), where recording is still
+        // ongoing, but key sequence has already changed (potentially) to the
+        // longest. But we still want currentKeySequenceChanged to trigger
+        // before gotKeySequence, so there's only so much we can do about it.
+        if ((!m_multiKeyShortcutsAllowed) || (m_currentKeySequence.count() == MaxKeyCount)) {
             finishRecording();
             break;
         }
@@ -364,14 +388,36 @@ void KeySequenceRecorderPrivate::handleKeyPress(QKeyEvent *event)
 void KeySequenceRecorderPrivate::handleKeyRelease(QKeyEvent *event)
 {
     Qt::KeyboardModifiers modifiers = event->modifiers() & modifierMask;
+
+    /* The modifier release event (e.g. Qt::Key_Shift) also has the modifier
+       flag set so we were interpreting the "Shift" press as "Shift + Shift".
+       This function makes it so we just take the key part but not the modifier
+       if we are doing this one alone. */
+    const auto justKey = [&](Qt::KeyboardModifiers modifier) {
+        modifiers &= ~modifier;
+        if (m_currentKeySequence.isEmpty() && m_modifierOnlyAllowed) {
+            m_currentKeySequence = appendToSequence(m_currentKeySequence, event->key());
+        }
+    };
     switch (event->key()) {
     case -1:
         return;
     case Qt::Key_Super_L:
     case Qt::Key_Super_R:
-        // Qt doesn't properly recognize Super_L/Super_R as MetaModifier
-        modifiers &= ~Qt::MetaModifier;
+    case Qt::Key_Meta:
+        justKey(Qt::MetaModifier);
+        break;
+    case Qt::Key_Shift:
+        justKey(Qt::ShiftModifier);
+        break;
+    case Qt::Key_Control:
+        justKey(Qt::ControlModifier);
+        break;
+    case Qt::Key_Alt:
+        justKey(Qt::AltModifier);
+        break;
     }
+
     if ((modifiers & m_currentModifiers) < m_currentModifiers) {
         m_currentModifiers = modifiers;
         controlModifierlessTimeout();
@@ -379,7 +425,7 @@ void KeySequenceRecorderPrivate::handleKeyRelease(QKeyEvent *event)
     }
 }
 
-void KeySequenceRecorderPrivate::finishRecording()
+void KeySequenceRecorderPrivate::receivedRecording()
 {
     m_modifierlessTimer.stop();
     m_isRecording = false;
@@ -387,7 +433,14 @@ void KeySequenceRecorderPrivate::finishRecording()
     if (m_inhibition) {
         m_inhibition->disableInhibition();
     }
+    QObject::disconnect(KeySequenceRecorderGlobal::self(), &KeySequenceRecorderGlobal::sequenceRecordingStarted,
+                        q, &KeySequenceRecorder::cancelRecording);
     Q_EMIT q->recordingChanged();
+}
+
+void KeySequenceRecorderPrivate::finishRecording()
+{
+    receivedRecording();
     Q_EMIT q->gotKeySequence(m_currentKeySequence);
 }
 
@@ -405,10 +458,22 @@ KeySequenceRecorder::KeySequenceRecorder(QWindow *window, QObject *parent)
 
 KeySequenceRecorder::~KeySequenceRecorder() noexcept
 {
+    if (d->m_inhibition && d->m_inhibition->shortcutsAreInhibited()) {
+        d->m_inhibition->disableInhibition();
+    }
 }
 
 void KeySequenceRecorder::startRecording()
 {
+    d->m_previousKeySequence = d->m_currentKeySequence;
+
+    KeySequenceRecorderGlobal::self()->sequenceRecordingStarted();
+    connect(KeySequenceRecorderGlobal::self(),
+            &KeySequenceRecorderGlobal::sequenceRecordingStarted,
+            this,
+            &KeySequenceRecorder::cancelRecording,
+            Qt::UniqueConnection);
+
     if (!d->m_window) {
         qCWarning(KGUIADDONS_LOG) << "Cannot record without a window";
         return;
@@ -422,6 +487,13 @@ void KeySequenceRecorder::startRecording()
     Q_EMIT currentKeySequenceChanged();
 }
 
+void KeySequenceRecorder::cancelRecording()
+{
+    setCurrentKeySequence(d->m_previousKeySequence);
+    d->receivedRecording();
+    Q_ASSERT(!isRecording());
+}
+
 bool KeySequenceRecorder::isRecording() const
 {
     return d->m_isRecording;
@@ -429,7 +501,22 @@ bool KeySequenceRecorder::isRecording() const
 
 QKeySequence KeySequenceRecorder::currentKeySequence() const
 {
-    return d->m_isRecording ? appendToSequence(d->m_currentKeySequence, d->m_currentModifiers) : d->m_currentKeySequence;
+    // We need a check for count() here because there's a race between the
+    // state of recording and a length of currentKeySequence.
+    if (d->m_isRecording && d->m_currentKeySequence.count() < KeySequenceRecorderPrivate::MaxKeyCount) {
+        return appendToSequence(d->m_currentKeySequence, d->m_currentModifiers);
+    } else {
+        return d->m_currentKeySequence;
+    }
+}
+
+void KeySequenceRecorder::setCurrentKeySequence(const QKeySequence &sequence)
+{
+    if (d->m_currentKeySequence == sequence) {
+        return;
+    }
+    d->m_currentKeySequence = sequence;
+    Q_EMIT currentKeySequenceChanged();
 }
 
 QWindow *KeySequenceRecorder::window() const
@@ -491,6 +578,20 @@ void KeySequenceRecorder::setModifierlessAllowed(bool allowed)
     }
     d->m_modifierlessAllowed = allowed;
     Q_EMIT modifierlessAllowedChanged();
+}
+
+bool KeySequenceRecorder::modifierOnlyAllowed() const
+{
+    return d->m_modifierOnlyAllowed;
+}
+
+void KeySequenceRecorder::setModifierOnlyAllowed(bool allowed)
+{
+    if (allowed == d->m_modifierOnlyAllowed) {
+        return;
+    }
+    d->m_modifierOnlyAllowed = allowed;
+    Q_EMIT modifierOnlyAllowedChanged();
 }
 
 #include "keysequencerecorder.moc"

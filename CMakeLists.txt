@@ -1,35 +1,44 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(KF_VERSION "5.90.0") # handled by release scripts
+set(KF_VERSION "5.103.0") # handled by release scripts
 project(KGuiAddons VERSION ${KF_VERSION})
 
 include(FeatureSummary)
-find_package(ECM 5.90.0  NO_MODULE)
+find_package(ECM 5.103.0  NO_MODULE)
 set_package_properties(ECM PROPERTIES TYPE REQUIRED DESCRIPTION "Extra CMake Modules." URL "https://commits.kde.org/extra-cmake-modules")
 feature_summary(WHAT REQUIRED_PACKAGES_NOT_FOUND FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
+set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 
+include(KDEInstallDirs)
+include(KDECMakeSettings)
+include(KDEFrameworkCompilerSettings NO_POLICY_SCOPE)
+
+include(KDEGitCommitHooks)
+include(ECMSetupVersion)
+include(ECMGenerateHeaders)
+include(ECMQtDeclareLoggingCategory)
+include(ECMDeprecationSettings)
+include(ECMAddQch)
+include(GenerateExportHeader)
 
 option(BUILD_QCH "Build API documentation in QCH format (for e.g. Qt Assistant, Qt Creator & KDevelop)" OFF)
 add_feature_info(QCH ${BUILD_QCH} "API documentation in QCH format (for e.g. Qt Assistant, Qt Creator & KDevelop)")
 
 if (UNIX AND NOT ANDROID AND NOT APPLE)
-    option(WITH_WAYLAND "Build with support for KeySequenceEditor inhibiting shortcuts on Wayland" ON)
+    option(WITH_WAYLAND "Build with support for KModifierKeyInfo, KSystemClipboard and KeySequenceRecorder inhibiting shortcuts on Wayland" ON)
     add_feature_info(WAYLAND ${WITH_WAYLAND} "KeySequenceEditor inhibiting shortcuts on Wayland")
 
-    option(WITH_X11 "Build with support for KeySequenceEditor inhibiting shortcuts on X11" ON)
+    option(WITH_X11 "Build with support for KModifierKeyInfo on X11" ON)
     add_feature_info(X11 ${WITH_X11} "KeySequenceEditor inhibiting shortcuts on X11")
+
+    option(WITH_DBUS "Build with support for color scheme information via XDG portals" ON)
+
 else()
     set(WITH_WAYLAND OFF)
     set(WITH_X11 OFF)
+    set(WITH_DBUS OFF)
 endif()
-
-set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
-
-include(KDEInstallDirs)
-include(KDEFrameworkCompilerSettings NO_POLICY_SCOPE)
-include(KDECMakeSettings)
-include(KDEGitCommitHooks)
 
 set(REQUIRED_QT_VERSION 5.15.2)
 if (WITH_WAYLAND)
@@ -41,15 +50,14 @@ find_package(Qt${QT_MAJOR_VERSION}Gui ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE 
 if (WITH_X11)
     find_package(X11 REQUIRED MODULE)
     find_package(XCB REQUIRED MODULE COMPONENTS XCB)
-if (QT_MAJOR_VERSION STREQUAL "5")
-    find_package(Qt5X11Extras ${REQUIRED_QT_VERSION} CONFIG)
-else()
-    # qtx11extras_p.h is in Qt6Gui, which is already found a couple of lines above
-endif()
+    if (QT_MAJOR_VERSION STREQUAL "5")
+        find_package(Qt5X11Extras ${REQUIRED_QT_VERSION} REQUIRED CONFIG)
+    endif()
 endif()
 
 if (WITH_WAYLAND)
-    find_package(Qt${QT_MAJOR_VERSION}WaylandClient ${REQUIRED_QT_VERSION} CONFIG)
+    find_package(PlasmaWaylandProtocols 1.7.0 REQUIRED)
+    find_package(Qt${QT_MAJOR_VERSION}WaylandClient ${REQUIRED_QT_VERSION} REQUIRED CONFIG)
     # With Qt6 use qt_generate_wayland_protocol_client_sources instead of
     # ecm_add_qtwayland_client_protocol (in QtWaylandScanner from ECM)
     if (NOT TARGET Qt6::WaylandClient)
@@ -58,19 +66,19 @@ if (WITH_WAYLAND)
     find_package(Wayland 1.9 REQUIRED Client)
 endif()
 
-include(GenerateExportHeader)
-include(ECMSetupVersion)
-include(ECMGenerateHeaders)
-include(ECMQtDeclareLoggingCategory)
-include(ECMAddQch)
+if (WITH_DBUS)
+    find_package(Qt${QT_MAJOR_VERSION}DBus ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE)
+endif()
 
 ecm_setup_version(PROJECT VARIABLE_PREFIX KGUIADDONS
                         VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/kguiaddons_version.h"
                         PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/KF5GuiAddonsConfigVersion.cmake"
                         SOVERSION 5)
 
+ecm_set_disabled_deprecation_versions(
+    QT 5.15.2
+)
 
-add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x050f02)
 add_subdirectory(src)
 if (BUILD_TESTING)
     add_subdirectory(autotests)
@@ -108,7 +116,7 @@ install(EXPORT KF5GuiAddonsTargets DESTINATION "${CMAKECONFIG_INSTALL_DIR}"
 
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/kguiaddons_version.h
-        DESTINATION ${KDE_INSTALL_INCLUDEDIR_KF} COMPONENT Devel)
+        DESTINATION ${KDE_INSTALL_INCLUDEDIR_KF}/KGuiAddons COMPONENT Devel)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
