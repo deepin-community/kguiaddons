@@ -1,3 +1,5 @@
+configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
 add_library(KF5GuiAddons)
 add_library(KF5::GuiAddons ALIAS KF5GuiAddons)
 
@@ -12,6 +14,8 @@ target_sources(KF5GuiAddons PRIVATE
  colors/kcolorutils.cpp
  colors/kcolorcollection.cpp
  colors/kcolormimedata.cpp
+ colors/kcolorschemewatcher.cpp
+ colors/kcolorschemewatcherbackend.cpp
  text/kdatevalidator.cpp
  text/kwordwrap.cpp
  fonts/kfontutils.cpp
@@ -25,6 +29,24 @@ target_sources(KF5GuiAddons PRIVATE
  recorder/keysequencerecorder.cpp
  systemclipboard/qtclipboard.cpp
  systemclipboard/ksystemclipboard.cpp
+
+ colors/kcolorspaces_p.h
+ colors/kcolorutils.h
+ colors/kcolorcollection.h
+ colors/kcolormimedata.h
+ text/kdatevalidator.h
+ text/kwordwrap.h
+ fonts/kfontutils.h
+ util/kiconutils.h
+ util/klocalimagecacheimpl.h
+ util/kmodifierkeyinfo.h
+ util/kmodifierkeyinfoprovider_p.h
+ util/kurlhandler_p.h
+ util/kcursorsaver.h
+ recorder/keyboardgrabber_p.h
+ recorder/keysequencerecorder.h
+ systemclipboard/qtclipboard_p.h
+ systemclipboard/ksystemclipboard.h
 )
 
 ecm_qt_declare_logging_category(KF5GuiAddons
@@ -35,12 +57,30 @@ ecm_qt_declare_logging_category(KF5GuiAddons
     EXPORT KGUIADDONS
 )
 
+if(WIN32)
+    target_sources(KF5GuiAddons PRIVATE colors/kcolorschemewatcher_win.cpp)
+    target_link_libraries(KF5GuiAddons PRIVATE advapi32)
+endif()
+
+if(APPLE)
+    find_library(APPKIT_LIBRARY AppKit)
+    target_sources(KF5GuiAddons PRIVATE colors/kcolorschemewatcher_mac.mm)
+    target_link_libraries(KF5GuiAddons PRIVATE ${APPKIT_LIBRARY})
+endif()
+
+if(WITH_DBUS)
+    target_sources(KF5GuiAddons PRIVATE colors/kcolorschemewatcher_xdg.cpp)
+    target_link_libraries(KF5GuiAddons PRIVATE Qt${QT_MAJOR_VERSION}::DBus)
+endif()
+
 if(WITH_WAYLAND)
     if (TARGET Qt6::WaylandClient)
         qt_generate_wayland_protocol_client_sources(KF5GuiAddons
             FILES
                 "${CMAKE_CURRENT_SOURCE_DIR}/recorder/keyboard-shortcuts-inhibit-unstable-v1.xml"
                 "${CMAKE_CURRENT_SOURCE_DIR}/systemclipboard/wlr-data-control-unstable-v1.xml"
+                "${PLASMA_WAYLAND_PROTOCOLS_DIR}/keystate.xml"
+                "${Wayland_DATADIR}/wayland.xml"
         )
     else()
         set(wayland_SRCS)
@@ -52,6 +92,14 @@ if(WITH_WAYLAND)
             PROTOCOL  systemclipboard/wlr-data-control-unstable-v1.xml
             BASENAME wlr-data-control-unstable-v1
         )
+        ecm_add_qtwayland_client_protocol(wayland_SRCS
+            PROTOCOL ${PLASMA_WAYLAND_PROTOCOLS_DIR}/keystate.xml
+            BASENAME keystate
+        )
+        ecm_add_qtwayland_client_protocol(wayland_SRCS
+            PROTOCOL ${Wayland_DATADIR}/wayland.xml
+            BASENAME wayland
+        )
         target_sources(KF5GuiAddons PRIVATE
             ${wayland_SRCS}
         )
@@ -59,9 +107,21 @@ if(WITH_WAYLAND)
     target_sources(KF5GuiAddons PRIVATE
         recorder/waylandinhibition.cpp
         systemclipboard/waylandclipboard.cpp
+        util/kmodifierkeyinfoprovider_wayland.cpp
+        recorder/waylandinhibition_p.h
+        systemclipboard/waylandclipboard_p.h
+        util/kmodifierkeyinfoprovider_wayland.h
     )
     target_compile_definitions(KF5GuiAddons PRIVATE WITH_WAYLAND)
     target_link_libraries(KF5GuiAddons PRIVATE Qt${QT_MAJOR_VERSION}::GuiPrivate Qt${QT_MAJOR_VERSION}::WaylandClient Wayland::Client)
+endif()
+
+if(WITH_X11)
+    target_sources(KF5GuiAddons PRIVATE util/kmodifierkeyinfoprovider_xcb.cpp util/kmodifierkeyinfoprovider_xcb.h)
+    if (TARGET Qt5::X11Extras)
+        target_link_libraries(KF5GuiAddons PRIVATE Qt5::X11Extras)
+    endif()
+    target_link_libraries(KF5GuiAddons PRIVATE X11::Xkb XCB::XCB)
 endif()
 
 generate_export_header(KF5GuiAddons BASE_NAME KGuiAddons)
@@ -79,23 +139,12 @@ target_include_directories(KF5GuiAddons INTERFACE "$<INSTALL_INTERFACE:${KDE_INS
 target_compile_definitions(KF5GuiAddons INTERFACE "$<INSTALL_INTERFACE:KGUIADDONS_LIB>")
 target_link_libraries(KF5GuiAddons PUBLIC Qt${QT_MAJOR_VERSION}::Gui)
 
-if (WITH_X11 AND (TARGET Qt5::X11Extras OR TARGET Qt6::Gui))
-    add_library(kmodifierkey_xcb MODULE util/kmodifierkeyinfoprovider_xcb.cpp)
-    install(TARGETS kmodifierkey_xcb DESTINATION ${KDE_INSTALL_PLUGINDIR}/kf5/kguiaddons/kmodifierkey/)
-
-    if (TARGET Qt5::X11Extras)
-        set(_qt_x11_libs Qt5::X11Extras)
-    elseif (TARGET Qt6::Gui)
-        set(_qt_x11_libs Qt6::GuiPrivate) # qtx11extras_p.h
-    endif()
-    target_link_libraries(kmodifierkey_xcb PRIVATE X11::Xkb XCB::XCB KF5::GuiAddons ${_qt_x11_libs})
-endif()
-
 ecm_generate_headers(KGuiAddons_HEADERS
   HEADER_NAMES
   KColorUtils
   KColorCollection
   KColorMimeData
+  KColorSchemeWatcher
 
   RELATIVE colors
   REQUIRED_HEADERS KGuiAddons_HEADERS
@@ -144,29 +193,7 @@ ecm_generate_headers(KGuiAddons_HEADERS
     REQUIRED_HEADERS KGuiAddons_HEADERS
 )
 
-find_package(PythonModuleGeneration)
-
-if (PythonModuleGeneration_FOUND)
-  ecm_generate_python_binding(
-    TARGET KF5::GuiAddons
-    PYTHONNAMESPACE PyKF5
-    MODULENAME KGuiAddons
-    SIP_DEPENDS
-      QtGui/QtGuimod.sip
-    HEADERS
-      colors/kcolorutils.h
-      colors/kcolorcollection.h
-      colors/kcolormimedata.h
-      text/kdatevalidator.h
-      text/kwordwrap.h
-      fonts/kfontutils.h
-      util/kiconutils.h
-      util/kimagecache.h
-      util/kmodifierkeyinfo.h
-  )
-endif()
-
-install(TARGETS KF5GuiAddons EXPORT KF5GuiAddonsTargets ${KF5_INSTALL_TARGETS_DEFAULT_ARGS})
+install(TARGETS KF5GuiAddons EXPORT KF5GuiAddonsTargets ${KF_INSTALL_TARGETS_DEFAULT_ARGS})
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/kguiaddons_export.h
   util/kmodifierkeyinfoprovider_p.h
@@ -216,3 +243,6 @@ if(BUILD_TESTING)
     )
 endif()
 
+if (NOT ANDROID)
+    add_subdirectory(geo-scheme-handler)
+endif()

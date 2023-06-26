@@ -1,4 +1,4 @@
-# SymbolsHelper-Confirmed: 5.74.0 amd64
+# SymbolsHelper-Confirmed: 5.100.0 amd64 armel armhf hurd-i386 i386 riscv64
 libKF5GuiAddons.so.5 libkf5guiaddons5 #MINVER#
 * Build-Depends-Package: libkf5guiaddons-dev
  _ZN10KFontUtils13adaptFontSizeER8QPainterRK7QStringRK6QSizeFdd6QFlagsINS_19AdaptFontSizeOptionEE@Base 4.96.0
@@ -83,15 +83,28 @@ libKF5GuiAddons.so.5 libkf5guiaddons5 #MINVER#
  _ZN16KSystemClipboard8instanceEv@Base 5.90.0
  _ZN16KSystemClipboardC1EP7QObject@Base 5.90.0
  _ZN16KSystemClipboardC2EP7QObject@Base 5.90.0
+ _ZN19KColorSchemeWatcher11qt_metacallEN11QMetaObject4CallEiPPv@Base 5.100.0
+ _ZN19KColorSchemeWatcher11qt_metacastEPKc@Base 5.100.0
+ _ZN19KColorSchemeWatcher16staticMetaObjectE@Base 5.100.0
+ _ZN19KColorSchemeWatcher23systemPreferenceChangedEv@Base 5.100.0
+ _ZN19KColorSchemeWatcherC1EP7QObject@Base 5.100.0
+ _ZN19KColorSchemeWatcherC2EP7QObject@Base 5.100.0
+ _ZN19KColorSchemeWatcherD0Ev@Base 5.100.0
+ _ZN19KColorSchemeWatcherD1Ev@Base 5.100.0
+ _ZN19KColorSchemeWatcherD2Ev@Base 5.100.0
  _ZN19KeySequenceRecorder11qt_metacallEN11QMetaObject4CallEiPPv@Base 5.77.0
  _ZN19KeySequenceRecorder11qt_metacastEPKc@Base 5.77.0
  _ZN19KeySequenceRecorder13windowChangedEv@Base 5.77.0
  _ZN19KeySequenceRecorder14gotKeySequenceERK12QKeySequence@Base 5.77.0
  _ZN19KeySequenceRecorder14startRecordingEv@Base 5.77.0
+ _ZN19KeySequenceRecorder15cancelRecordingEv@Base 5.99.0
  _ZN19KeySequenceRecorder16recordingChangedEv@Base 5.77.0
  _ZN19KeySequenceRecorder16staticMetaObjectE@Base 5.77.0
+ _ZN19KeySequenceRecorder21setCurrentKeySequenceERK12QKeySequence@Base 5.99.0
+ _ZN19KeySequenceRecorder22setModifierOnlyAllowedEb@Base 5.102.0
  _ZN19KeySequenceRecorder22setModifierlessAllowedEb@Base 5.77.0
  _ZN19KeySequenceRecorder25currentKeySequenceChangedEv@Base 5.77.0
+ _ZN19KeySequenceRecorder26modifierOnlyAllowedChangedEv@Base 5.102.0
  _ZN19KeySequenceRecorder26modifierlessAllowedChangedEv@Base 5.77.0
  _ZN19KeySequenceRecorder27setMultiKeyShortcutsAllowedEb@Base 5.77.0
  _ZN19KeySequenceRecorder31multiKeyShortcutsAllowedChangedEv@Base 5.77.0
@@ -163,9 +176,12 @@ libKF5GuiAddons.so.5 libkf5guiaddons5 #MINVER#
  _ZNK16KModifierKeyInfo8knowsKeyEN2Qt3KeyE@Base 4.96.0
  _ZNK16KModifierKeyInfo9knownKeysEv@Base 4.96.0
  _ZNK16KSystemClipboard10metaObjectEv@Base 5.90.0
+ _ZNK19KColorSchemeWatcher10metaObjectEv@Base 5.100.0
+ _ZNK19KColorSchemeWatcher16systemPreferenceEv@Base 5.100.0
  _ZNK19KeySequenceRecorder10metaObjectEv@Base 5.77.0
  _ZNK19KeySequenceRecorder11isRecordingEv@Base 5.77.0
  _ZNK19KeySequenceRecorder18currentKeySequenceEv@Base 5.77.0
+ _ZNK19KeySequenceRecorder19modifierOnlyAllowedEv@Base 5.102.0
  _ZNK19KeySequenceRecorder19modifierlessAllowedEv@Base 5.77.0
  _ZNK19KeySequenceRecorder24multiKeyShortcutsAllowedEv@Base 5.77.0
  _ZNK19KeySequenceRecorder6windowEv@Base 5.77.0
@@ -191,27 +207,66 @@ libKF5GuiAddons.so.5 libkf5guiaddons5 #MINVER#
  _ZTI14KDateValidator@Base 4.96.0
  _ZTI16KModifierKeyInfo@Base 4.96.0
  _ZTI16KSystemClipboard@Base 5.90.0
+ _ZTI19KColorSchemeWatcher@Base 5.100.0
  _ZTI19KeySequenceRecorder@Base 5.77.0
  _ZTI24KModifierKeyInfoProvider@Base 5.61.0
  _ZTI30KLocalImageCacheImplementation@Base 4.96.0
+ (arch=armel riscv64)_ZTIN9__gnu_cxx7__mutexE@Base 5.99.0
+ (arch=armel riscv64)_ZTISt11_Mutex_baseILN9__gnu_cxx12_Lock_policyE1EE@Base 5.99.0
+ (arch=!armel !hurd-i386 !riscv64)_ZTISt11_Mutex_baseILN9__gnu_cxx12_Lock_policyE2EE@Base 5.99.0
+ (arch=armel riscv64)_ZTISt16_Sp_counted_baseILN9__gnu_cxx12_Lock_policyE1EE@Base 5.99.0
+ (arch=!armel !hurd-i386 !riscv64)_ZTISt16_Sp_counted_baseILN9__gnu_cxx12_Lock_policyE2EE@Base 5.99.0
+ (arch=armel armhf)_ZTISt19_Sp_make_shared_tag@Base 5.100.0
  _ZTS11KUrlHandler@Base 5.90.0
  _ZTS11QSharedData@Base 5.61.0
  _ZTS14KDateValidator@Base 4.96.0
  _ZTS16KModifierKeyInfo@Base 4.96.0
  _ZTS16KSystemClipboard@Base 5.90.0
+ _ZTS19KColorSchemeWatcher@Base 5.100.0
  _ZTS19KeySequenceRecorder@Base 5.77.0
  _ZTS24KModifierKeyInfoProvider@Base 5.61.0
  _ZTS30KLocalImageCacheImplementation@Base 4.96.0
+ (arch=armel riscv64)_ZTSN9__gnu_cxx7__mutexE@Base 5.99.0
+ (arch=armel riscv64)_ZTSSt11_Mutex_baseILN9__gnu_cxx12_Lock_policyE1EE@Base 5.99.0
+ (arch=!armel !riscv64 !hurd-i386)_ZTSSt11_Mutex_baseILN9__gnu_cxx12_Lock_policyE2EE@Base 5.99.0
+ (arch=armel riscv64)_ZTSSt16_Sp_counted_baseILN9__gnu_cxx12_Lock_policyE1EE@Base 5.99.0
+ (arch=!armel !riscv64 !hurd-i386)_ZTSSt16_Sp_counted_baseILN9__gnu_cxx12_Lock_policyE2EE@Base 5.99.0
+ (arch=!hurd-i386)_ZTSSt19_Sp_make_shared_tag@Base 5.99.0
  _ZTV11KUrlHandler@Base 5.90.0
  _ZTV14KDateValidator@Base 4.96.0
  _ZTV16KModifierKeyInfo@Base 4.96.0
  _ZTV16KSystemClipboard@Base 5.90.0
+ _ZTV19KColorSchemeWatcher@Base 5.100.0
  _ZTV19KeySequenceRecorder@Base 5.77.0
  _ZTV24KModifierKeyInfoProvider@Base 5.61.0
  _ZTV30KLocalImageCacheImplementation@Base 4.96.0
- zwlr_data_control_device_v1_interface@Base 5.90.0
- zwlr_data_control_manager_v1_interface@Base 5.90.0
- zwlr_data_control_offer_v1_interface@Base 5.90.0
- zwlr_data_control_source_v1_interface@Base 5.90.0
+ (arch=!hurd-i386)_ZZNSt19_Sp_make_shared_tag5_S_tiEvE5__tag@Base 5.99.0
+ (arch=linux-any)org_kde_kwin_keystate_interface@Base 5.94.0
+ (optional)wl_buffer_interface@Base 5.102.0
+ (optional)wl_callback_interface@Base 5.102.0
+ (optional)wl_compositor_interface@Base 5.102.0
+ (optional)wl_data_device_interface@Base 5.102.0
+ (optional)wl_data_device_manager_interface@Base 5.102.0
+ (optional)wl_data_offer_interface@Base 5.102.0
+ (optional)wl_data_source_interface@Base 5.102.0
+ (optional)wl_display_interface@Base 5.102.0
+ (optional)wl_keyboard_interface@Base 5.102.0
+ (optional)wl_output_interface@Base 5.102.0
+ (optional)wl_pointer_interface@Base 5.102.0
+ (optional)wl_region_interface@Base 5.102.0
+ (optional)wl_registry_interface@Base 5.102.0
+ (optional)wl_seat_interface@Base 5.102.0
+ (optional)wl_shell_interface@Base 5.102.0
+ (optional)wl_shell_surface_interface@Base 5.102.0
+ (optional)wl_shm_interface@Base 5.102.0
+ (optional)wl_shm_pool_interface@Base 5.102.0
+ (optional)wl_subcompositor_interface@Base 5.102.0
+ (optional)wl_subsurface_interface@Base 5.102.0
+ (optional)wl_surface_interface@Base 5.102.0
+ (optional)wl_touch_interface@Base 5.102.0
+ (arch=linux-any)zwlr_data_control_device_v1_interface@Base 5.90.0
+ (arch=linux-any)zwlr_data_control_manager_v1_interface@Base 5.90.0
+ (arch=linux-any)zwlr_data_control_offer_v1_interface@Base 5.90.0
+ (arch=linux-any)zwlr_data_control_source_v1_interface@Base 5.90.0
  (arch=linux-any)zwp_keyboard_shortcuts_inhibit_manager_v1_interface@Base 5.77.0
  (arch=linux-any)zwp_keyboard_shortcuts_inhibitor_v1_interface@Base 5.77.0

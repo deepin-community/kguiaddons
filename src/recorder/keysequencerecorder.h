@@ -54,7 +54,7 @@ class KGUIADDONS_EXPORT KeySequenceRecorder : public QObject
      *
      * After recording it contains the last recorded QKeySequence
      */
-    Q_PROPERTY(QKeySequence currentKeySequence READ currentKeySequence NOTIFY currentKeySequenceChanged)
+    Q_PROPERTY(QKeySequence currentKeySequence READ currentKeySequence WRITE setCurrentKeySequence NOTIFY currentKeySequenceChanged)
     /**
      * The window in which the key events are happening that should be recorded
      */
@@ -79,6 +79,16 @@ class KGUIADDONS_EXPORT KeySequenceRecorder : public QObject
      * @see QKeySequence
      */
     Q_PROPERTY(bool multiKeyShortcutsAllowed READ multiKeyShortcutsAllowed WRITE setMultiKeyShortcutsAllowed NOTIFY multiKeyShortcutsAllowedChanged)
+
+    /**
+     * It makes it acceptable for the key sequence to be just a modifier (e.g. Shift or Control)
+     *
+     * By default, if only a modifier is pressed and then released, the component will remain waiting for the sequence.
+     * When enabled, it will take the modifier key as the key sequence.
+     *
+     * By default this is `false`.
+     */
+    Q_PROPERTY(bool modifierOnlyAllowed READ modifierOnlyAllowed WRITE setModifierOnlyAllowed NOTIFY modifierOnlyAllowedChanged)
 public:
     /**
      * Constructor.
@@ -93,11 +103,12 @@ public:
      * Start recording.
      * Calling startRecording when window() is `nullptr` has no effect.
      */
-    void Q_INVOKABLE startRecording();
+    Q_INVOKABLE void startRecording();
 
     bool isRecording() const;
 
     QKeySequence currentKeySequence() const;
+    void setCurrentKeySequence(const QKeySequence &sequence);
 
     QWindow *window() const;
     void setWindow(QWindow *window);
@@ -107,6 +118,15 @@ public:
 
     void setModifierlessAllowed(bool allowed);
     bool modifierlessAllowed() const;
+
+    void setModifierOnlyAllowed(bool allowed);
+    bool modifierOnlyAllowed() const;
+
+public Q_SLOTS:
+    /**
+     * Stops the recording session
+     */
+    void cancelRecording();
 
 Q_SIGNALS:
     /**
@@ -122,6 +142,7 @@ Q_SIGNALS:
     void currentKeySequenceChanged();
     void multiKeyShortcutsAllowedChanged();
     void modifierlessAllowedChanged();
+    void modifierOnlyAllowedChanged();
 
 private:
     friend class KeySequenceRecorderPrivate;
